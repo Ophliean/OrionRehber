@@ -1,0 +1,94 @@
+﻿@model OrionRehber.Models.ViewModels.RehberListVm
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<section class="list-section">
+
+    <div class="list-header">
+        <h2>Rehber</h2>
+        <button class="add-btn" onclick="openAddModal()">+ Yeni Kayıt</button>
+    </div>
+
+    <!-- 🔍 ARAMA KUTUSU -->
+    <div class="search-wrapper" style="margin-bottom:15px;">
+        <input type="text"
+               id="searchBox"
+               placeholder="Kişilerde ara..."
+               style="width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px;" />
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ad Soyad</th>
+                    <th>Telefon</th>
+                    <th>İşlem</th>
+                </tr>
+            </thead>
+            <tbody id="kisilerBody">
+                @foreach (var item in Model.Kisiler)
+                {
+                    <tr>
+                        <td>@item.Ad @item.Soyad</td>
+                        <td>@item.Telefon</td>
+                        <td>
+                            <button onclick="openEditModal(@item.Id)">✎</button>
+                            <button onclick="deleteRecord(@item.Id)">🗑</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 📄 PAGINATION -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="pagination">
+            @if (Model.CurrentPage > 1)
+            {
+                <a href="@Url.Action("Index", "Rehber", new { page = Model.CurrentPage - 1 })">&laquo; Önceki</a>
+            }
+
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                if (i == Model.CurrentPage)
+                {
+                    <span class="active">@i</span>
+                }
+                else
+                {
+                    <a href="@Url.Action("Index", "Rehber", new { page = i })">@i</a>
+                }
+            }
+
+            @if (Model.CurrentPage < Model.TotalPages)
+            {
+                <a href="@Url.Action("Index", "Rehber", new { page = Model.CurrentPage + 1 })">Sonraki &raquo;</a>
+            }
+        </div>
+    }
+
+</section>
+
+@Html.Partial("_AddEditModal")
+@Html.Partial("_DeleteModal")
+
+<!-- Arama scripti -->
+<script>
+    const tbody = document.getElementById("kisilerBody");
+    const searchBox = document.getElementById("searchBox");
+
+    searchBox.addEventListener("keyup", function () {
+        let keyword = this.value.toLowerCase();
+        let rows = tbody.getElementsByTagName("tr");
+
+        for (let i = 0; i < rows.length; i++) {
+            let text = rows[i].innerText.toLowerCase();
+            rows[i].style.display = text.includes(keyword) ? "" : "none";
+        }
+    });
+</script>

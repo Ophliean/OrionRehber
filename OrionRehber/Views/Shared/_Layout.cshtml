@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+
+<body class="app-body">
+
+    <div class="container">
+
+       
+        <div class="sidebar">
+            <h2 class="sidebar-title">Kişiler</h2>
+
+            <ul class="menu">
+                <li><a href="/Rehber/Index">Telefon Rehberi</a></li>
+            </ul>
+        </div>
+
+        
+        <div class="main-area">
+
+            
+            <div class="topbar">
+                <div></div>
+
+                <div class="user-info">
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <span>@User.Identity.Name</span>
+                    }
+                    <a class="logout" href="/Account/Logout">Çıkış</a>
+                </div>
+            </div>
+
+            
+            <div class="content">
+                @RenderBody()
+            </div>
+
+        </div>
+
+    </div>
+
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    
+    <script src="~/js/modal.js"></script>
+  
+
+</body>
+</html>

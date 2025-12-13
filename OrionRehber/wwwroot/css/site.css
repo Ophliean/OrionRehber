@@ -1,0 +1,370 @@
+/* =============================
+   GENEL AYARLAR (Tüm sayfalar)
+============================= */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f3f4f7;
+}
+
+    /* =============================
+   LOGIN SAYFASI (SADECE login-page)
+============================= */
+    body.login-page {
+        background: linear-gradient(180deg, #1f242f, #171a22);
+        height: 100vh;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+/* Login container */
+.login-center {
+    width: 80%;
+    max-width: 1400px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.left-text h1 {
+    color: white;
+    font-size: 70px;
+    font-weight: 300;
+    margin: 0;
+    letter-spacing: 5px;
+}
+
+.right-form {
+    width: 350px;
+    display: flex;
+    flex-direction: column;
+    color: white;
+}
+
+    .right-form label {
+        margin-top: 15px;
+        margin-bottom: 5px;
+    }
+
+    .right-form input {
+        padding: 10px;
+        width: 100%;
+        border-radius: 8px;
+        border: none;
+        outline: none;
+    }
+
+    .right-form button {
+        margin-top: 20px;
+        padding: 12px;
+        background: #1f75ff;
+        border: none;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+        .right-form button:hover {
+            background: #155bcc;
+        }
+
+.remember {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    color: white;
+}
+
+/* =============================
+   LAYOUT (Login dýþýndaki sayfalar)
+============================= */
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 230px;
+    background: #2b2f3a;
+    color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-title {
+    padding: 20px;
+    font-size: 22px;
+    border-bottom: 1px solid #444;
+}
+
+.menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+    .menu li a {
+        display: block;
+        padding: 14px 20px;
+        color: #ccc;
+        text-decoration: none;
+    }
+
+        .menu li a:hover {
+            background: #1d1f27;
+            color: white;
+        }
+
+/* Topbar */
+.topbar {
+    height: 60px;
+    background: white;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.logout {
+    background: #dc3545;
+    padding: 8px 15px;
+    border-radius: 5px;
+    color: white;
+    text-decoration: none;
+}
+
+    .logout:hover {
+        background: #b52a3a;
+    }
+
+/* Content */
+.main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.content {
+    padding: 30px;
+    overflow-y: auto;
+}
+
+/* =============================
+   REHBER / TABLO
+============================= */
+.table-wrapper {
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    table th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: left;
+    }
+
+    table td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+    }
+
+        table td span {
+            cursor: pointer;
+            margin-right: 8px;
+            font-size: 18px;
+        }
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.add-btn {
+    background: #28a745;
+    color: white;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+    .add-btn:hover {
+        background: #218838;
+    }
+
+.search-input {
+    width: 250px;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+}
+
+/* =============================
+   MODAL
+============================= */
+.hidden {
+    display: none !important;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: white;
+    width: 420px;
+    max-width: 90%;
+    padding: 25px;
+    border-radius: 12px;
+    animation: fadeModal .15s ease-out;
+}
+
+@keyframes fadeModal {
+    from {
+        opacity: 0;
+        transform: scale(.94);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.save-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 5px;
+}
+
+.cancel-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 5px;
+}
+
+.delete-btn {
+    background: #dc3545;
+    color red;
+}
+.hidden {
+    display: none !important;
+}
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-box {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 350px;
+}
+.toast {
+    position: fixed;
+    top: 20px;
+    right: -300px;
+    background: #4caf50;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    font-size: 16px;
+    transition: all 0.4s ease;
+    z-index: 999999;
+}
+
+    .toast.error {
+        background: #f44336;
+    }
+
+    .toast.show {
+        right: 20px;
+    }
+.pagination {
+    margin-top: 15px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+    .pagination a,
+    .pagination span {
+        padding: 6px 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+        text-decoration: none;
+    }
+
+    .pagination a {
+        background: #fff;
+        color: #333;
+    }
+
+        .pagination a:hover {
+            background: #f0f0f0;
+        }
+
+    .pagination .active {
+        background: #007bff;
+        color: #fff;
+        border-color: #007bff;
+    }
+

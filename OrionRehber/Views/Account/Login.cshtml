@@ -1,0 +1,46 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Giriş Yap</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+
+<body class="login-page">
+
+    <div class="login-center">
+
+        <div class="left-text">
+            <h1>ORIONPOS</h1>
+            <h1>TELEFON</h1>
+            <h1>REHBERİ</h1>
+        </div>
+
+        <form method="post" class="right-form">
+            <label>Kullanıcı Adı Veya E-Posta:</label>
+            <input type="text" name="user" />
+
+            <label>Şifre:</label>
+            <input type="password" name="password" />
+
+            <div class="remember">
+                <span>Beni Hatırla</span>
+                <input type="checkbox" name="rememberMe" />
+            </div>
+            <div style="margin-top:10px;">
+                <a href="/Account/Register" style="color:white;">Kayıt Ol</a>
+            </div>
+
+
+            <button type="submit">Giriş Yap</button>
+        </form>
+
+    </div>
+
+</body>
+</html>

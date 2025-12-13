@@ -1,0 +1,53 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Kayıt Ol</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+
+<body class="login-page">
+
+    <div class="login-center">
+
+        <div class="left-text">
+            <h1>ORIONPOS</h1>
+            <h1>Kullanıcı</h1>
+            <h1>Kayıt</h1>
+        </div>
+
+        <form method="post" class="right-form">
+
+            <h2 style="color:white; margin-bottom:10px;">Kayıt Ol</h2>
+
+            <label>Kullanıcı Adı</label>
+            <input type="text" name="KullaniciAdi" required />
+
+            <label>Email</label>
+            <input type="email" name="Eposta" required />
+
+            <label>Ad Soyad</label>
+            <input type="text" name="Isim" required />
+
+            <label>Şifre</label>
+            <input type="password" name="Sifre" required />
+
+            <button type="submit">Kayıt Ol</button>
+
+            <div style="margin-top:10px;">
+                <a href="/Account/Login" style="color:white;">Giriş Yap</a>
+            </div>
+
+            @if (ViewBag.Hata != null)
+            {
+                <p style="color: red; margin-top: 10px;">@ViewBag.Hata</p>
+            }
+        </form>
+    </div>
+
+</body>
+</html>

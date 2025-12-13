@@ -1,0 +1,27 @@
+﻿<div id="addEditModal" class="modal hidden">
+    <div class="modal-content">
+
+        <h3 id="modalTitle">Yeni Kayıt</h3>
+
+        <form id="addEditForm">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="Id" id="Id" />
+
+            <label>Ad</label>
+            <input type="text" name="Ad" id="Ad" required />
+
+            <label>Soyad</label>
+            <input type="text" name="Soyad" id="Soyad" required />
+
+            <label>Telefon</label>
+            <input type="text" name="Telefon" id="Telefon" required />
+
+            <div class="modal-actions">
+                <button type="submit" class="save-btn">Kaydet</button>
+                <button type="button" class="cancel-btn" onclick="closeAddEditModal()">İptal</button>
+            </div>
+        </form>
+
+    </div>
+</div>
