@@ -21,7 +21,10 @@
             <h1>REHBERİ</h1>
         </div>
 
-        <form method="post" class="right-form">
+        <form id="loginForm" method="post" class="right-form">
+            <!-- 🔴 SADECE KIRMIZI UYARI -->
+            <div id="loginError" style="display:none; color:red; margin-bottom:10px;"></div>
+
             <label>Kullanıcı Adı Veya E-Posta:</label>
             <input type="text" name="user" />
 
@@ -32,15 +35,52 @@
                 <span>Beni Hatırla</span>
                 <input type="checkbox" name="rememberMe" />
             </div>
+
             <div style="margin-top:10px;">
                 <a href="/Account/Register" style="color:white;">Kayıt Ol</a>
             </div>
-
 
             <button type="submit">Giriş Yap</button>
         </form>
 
     </div>
+
+    <script>
+        const form = document.getElementById("loginForm");
+        const errorBox = document.getElementById("loginError");
+
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            errorBox.style.display = "none";
+            errorBox.innerText = "";
+
+            const formData = new FormData(form);
+
+            const res = await fetch("@Url.Action("Login", "Account")", {
+                method: "POST",
+                body: formData
+            });
+
+            // Eğer sunucu JSON dönmezse (hata/redirect vs.) fallback:
+            let json = null;
+            try {
+                json = await res.json();
+            } catch {
+                // beklenmedik durumda sayfayı normal submit edelim:
+                form.submit();
+                return;
+            }
+
+            if (!json.success) {
+                errorBox.innerText = json.message || "Kullanıcı adı veya şifre hatalı.";
+                errorBox.style.display = "block";
+                return;
+            }
+
+            window.location.href = json.redirectUrl || "@Url.Action("Index", "Rehber")";
+        });
+    </script>
 
 </body>
 </html>

@@ -18,12 +18,10 @@ namespace OrionRehber.Controllers
             _context = context;
         }
 
-       
         private int GetCurrentUserId()
         {
             var name = User.Identity?.Name ?? string.Empty;
 
-           
             var user = _context.Kullanici
                 .FirstOrDefault(x =>
                        x.KullaniciAdi == name
@@ -33,23 +31,52 @@ namespace OrionRehber.Controllers
             if (user != null)
                 return user.Id;
 
-           
             return 1;
         }
 
        
-        // LİSTE – sadece kendi kayıtları
+        // TELEFON: normalize + validate + format
        
+        private string NormalizeTelefon(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
 
+            var digits = new string(input.Where(char.IsDigit).ToArray());
+
+            if (digits.StartsWith("90") && digits.Length >= 12)
+                digits = digits.Substring(2);
+
+            if (digits.StartsWith("0") && digits.Length >= 11)
+                digits = digits.Substring(1);
+
+            return digits;
+        }
+
+        private bool IsValidTrGsm(string normalized10)
+        {
+            return !string.IsNullOrWhiteSpace(normalized10)
+                   && normalized10.Length == 10
+                   && normalized10.StartsWith("5");
+        }
+
+        private string FormatTelefon(string inputOrNormalized)
+        {
+            var t = NormalizeTelefon(inputOrNormalized);
+            if (!IsValidTrGsm(t)) return inputOrNormalized ?? "";
+            return $"+90({t.Substring(0, 3)}){t.Substring(3, 3)}-{t.Substring(6, 2)}-{t.Substring(8, 2)}";
+        }
+
+        // LISTE
+      
         public IActionResult Index(int page = 1)
         {
-            var currentUserId = GetCurrentUserId();   
-
-            const int pageSize = 5;  
+            var currentUserId = GetCurrentUserId();
+            const int pageSize = 5;
 
             var query = _context.Rehber
                 .Where(x => !x.IsDeleted && x.KaydedenKullaniciId == currentUserId)
-                .OrderBy(x => x.Ad); 
+                .OrderBy(x => x.Ad);
 
             var totalCount = query.Count();
 
@@ -68,10 +95,9 @@ namespace OrionRehber.Controllers
             return View(vm);
         }
 
-
-        // ===========================
-        // TEK KAYIT GETİR (Edit için) – sadece kullanıcının kendi kaydı
-        // ===========================
+        
+        // TEK KAYIT GETİR
+    
         [HttpGet]
         public IActionResult Get(int id)
         {
@@ -83,34 +109,38 @@ namespace OrionRehber.Controllers
             if (kisi == null)
                 return NotFound();
 
-            return Json(kisi);
+            return Json(new
+            {
+                kisi.Id,
+                kisi.Ad,
+                kisi.Soyad,
+                Telefon = FormatTelefon(kisi.Telefon),
+                TelefonRaw = kisi.Telefon
+            });
         }
 
-        // ===========================
-        // YENİ KAYIT (AJAX)
-        // ===========================
+        // YENİ KAYIT
+       
         [HttpPost]
         public IActionResult Add([FromForm] RehberVm model)
         {
             if (!ModelState.IsValid)
-            {
-                return Json(new
-                {
-                    success = false,
-                    message = "Form hatalı"
-                });
-            }
+                return Json(new { success = false, message = "Form hatalı" });
+
+            var normalized = NormalizeTelefon(model.Telefon);
+            if (!IsValidTrGsm(normalized))
+                return Json(new { success = false, message = "Telefon formatı geçersiz. Örn: 05xx xxx xx xx" });
 
             var currentUserId = GetCurrentUserId();
 
             var entity = new Rehber
             {
-                Ad = model.Ad,
-                Soyad = model.Soyad,
-                Telefon = model.Telefon,
+                Ad = model.Ad?.Trim(),
+                Soyad = model.Soyad?.Trim(),
+                Telefon = normalized,
                 KayitTarihi = DateTime.Now,
                 IsDeleted = false,
-                KaydedenKullaniciId = currentUserId   // sabit 1 değil, gerçek kullanıcı
+                KaydedenKullaniciId = currentUserId
             };
 
             _context.Rehber.Add(entity);
@@ -119,24 +149,25 @@ namespace OrionRehber.Controllers
             return Json(new
             {
                 success = true,
-                message = "Kayıt başarıyla eklendi"
+                message = "Kayıt başarıyla eklendi",
+                data = new
+                {
+                    id = entity.Id,
+                    ad = entity.Ad,
+                    soyad = entity.Soyad,
+                    telefon = entity.Telefon
+                }
             });
         }
 
-        // ===========================
-        // GÜNCELLE (AJAX) – sadece kendi kaydı
-        // ===========================
+     
+        // GÜNCELLE
+       
         [HttpPost]
         public IActionResult Edit([FromForm] RehberVm model)
         {
             if (!ModelState.IsValid)
-            {
-                return Json(new
-                {
-                    success = false,
-                    message = "Form hatalı"
-                });
-            }
+                return Json(new { success = false, message = "Form hatalı" });
 
             var currentUserId = GetCurrentUserId();
 
@@ -144,30 +175,35 @@ namespace OrionRehber.Controllers
                 .FirstOrDefault(x => x.Id == model.Id && x.KaydedenKullaniciId == currentUserId);
 
             if (kisi == null)
-            {
-                return Json(new
-                {
-                    success = false,
-                    message = "Kayıt bulunamadı"
-                });
-            }
+                return Json(new { success = false, message = "Kayıt bulunamadı" });
 
-            kisi.Ad = model.Ad;
-            kisi.Soyad = model.Soyad;
-            kisi.Telefon = model.Telefon;
+            var normalized = NormalizeTelefon(model.Telefon);
+            if (!IsValidTrGsm(normalized))
+                return Json(new { success = false, message = "Telefon formatı geçersiz. Örn: 05xx xxx xx xx" });
+
+            kisi.Ad = model.Ad?.Trim();
+            kisi.Soyad = model.Soyad?.Trim();
+            kisi.Telefon = normalized;
 
             _context.SaveChanges();
 
             return Json(new
             {
                 success = true,
-                message = "Kayıt başarıyla güncellendi"
+                message = "Kayıt başarıyla güncellendi",
+                data = new
+                {
+                    id = kisi.Id,
+                    ad = kisi.Ad,
+                    soyad = kisi.Soyad,
+                    telefon = kisi.Telefon
+                }
             });
         }
 
-        // 
-        // SİLME (AJAX) – sadece kendi kaydı
-        // ===========================
+        
+        // SİLME
+        
         [HttpPost]
         public IActionResult Delete(int id)
         {
@@ -177,21 +213,16 @@ namespace OrionRehber.Controllers
                 .FirstOrDefault(x => x.Id == id && x.KaydedenKullaniciId == currentUserId);
 
             if (kisi == null)
-            {
-                return Json(new
-                {
-                    success = false,
-                    message = "Kayıt bulunamadı"
-                });
-            }
+                return Json(new { success = false, message = "Kayıt bulunamadı" });
 
-            kisi.IsDeleted = true; 
+            kisi.IsDeleted = true;
             _context.SaveChanges();
 
             return Json(new
             {
                 success = true,
-                message = "Kayıt başarıyla silindi"
+                message = "Kayıt başarıyla silindi",
+                data = new { id = id }
             });
         }
     }

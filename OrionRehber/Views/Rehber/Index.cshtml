@@ -1,94 +1,575 @@
 ﻿@model OrionRehber.Models.ViewModels.RehberListVm
+@using System.Linq
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<section class="list-section">
+<section class="rehber-page">
 
-    <div class="list-header">
-        <h2>Rehber</h2>
-        <button class="add-btn" onclick="openAddModal()">+ Yeni Kayıt</button>
+    <div class="rehber-toolbar">
+        <div class="toolbar-left">
+            <h2>Rehber</h2>
+        </div>
+
+        <div class="toolbar-right">
+            <!-- Arama -->
+            <div class="search-inline">
+                <input type="text" id="searchBox" placeholder="Kişilerde ara..." />
+            </div>
+
+            <!--Buton grubu -->
+            <div class="btn-group">
+                <button type="button" class="icon-btn" title="Yeni" onclick="startAdd()">＋</button>
+                <button type="button" class="icon-btn" title="Düzenle" onclick="startEdit()">✎</button>
+                <button type="button" class="icon-btn danger" title="Sil" onclick="deleteSelected()">🗑</button>
+            </div>
+        </div>
     </div>
 
-    <!-- 🔍 ARAMA KUTUSU -->
-    <div class="search-wrapper" style="margin-bottom:15px;">
-        <input type="text"
-               id="searchBox"
-               placeholder="Kişilerde ara..."
-               style="width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px;" />
-    </div>
+    <div class="rehber-grid">
+        <!-- SOL: liste -->
+        <div class="list-pane">
+            <div class="table-wrapper">
+                <table class="rehber-table">
+                    <thead>
+                        <tr>
+                            <th>Ad Soyad</th>
+                            <th>Telefon No.</th>
+                        </tr>
+                    </thead>
 
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Ad Soyad</th>
-                    <th>Telefon</th>
-                    <th>İşlem</th>
-                </tr>
-            </thead>
-            <tbody id="kisilerBody">
-                @foreach (var item in Model.Kisiler)
-                {
-                    <tr>
-                        <td>@item.Ad @item.Soyad</td>
-                        <td>@item.Telefon</td>
-                        <td>
-                            <button onclick="openEditModal(@item.Id)">✎</button>
-                            <button onclick="deleteRecord(@item.Id)">🗑</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                    <tbody id="kisilerBody">
+                        @foreach (var item in Model.Kisiler)
+                        {
+                            // Telefon formatlama 
+                            var t = item.Telefon ?? "";
+                            var digits = new string(t.Where(char.IsDigit).ToArray());
 
-    <!-- 📄 PAGINATION -->
-    @if (Model.TotalPages > 1)
-    {
-        <div class="pagination">
-            @if (Model.CurrentPage > 1)
+                            if (digits.StartsWith("90") && digits.Length >= 12) { digits = digits.Substring(2); }
+                            if (digits.StartsWith("0") && digits.Length >= 11) { digits = digits.Substring(1); }
+
+                            var isValid = digits.Length == 10 && digits.StartsWith("5");
+                            var formatted = isValid
+                            ? $"+90({digits.Substring(0, 3)}){digits.Substring(3, 3)}-{digits.Substring(6, 2)}-{digits.Substring(8, 2)}"
+                            : item.Telefon;
+
+                            <tr class="person-row"
+                                data-id="@item.Id"
+                                data-ad="@item.Ad"
+                                data-soyad="@item.Soyad"
+                                data-telefon="@formatted"
+                                data-telefonraw="@digits"
+                                onclick="selectRow(this)">
+                                <td>@item.Ad @item.Soyad</td>
+                                <td>@formatted</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINATION -->
+            @if (Model.TotalPages > 1)
             {
-                <a href="@Url.Action("Index", "Rehber", new { page = Model.CurrentPage - 1 })">&laquo; Önceki</a>
-            }
+                <div class="pagination">
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <a href="@Url.Action("Index", "Rehber", new { page = Model.CurrentPage - 1 })">&laquo; Önceki</a>
+                    }
 
-            @for (int i = 1; i <= Model.TotalPages; i++)
-            {
-                if (i == Model.CurrentPage)
-                {
-                    <span class="active">@i</span>
-                }
-                else
-                {
-                    <a href="@Url.Action("Index", "Rehber", new { page = i })">@i</a>
-                }
-            }
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        if (i == Model.CurrentPage)
+                        {
+                            <span class="active">@i</span>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Index", "Rehber", new { page = i })">@i</a>
+                        }
+                    }
 
-            @if (Model.CurrentPage < Model.TotalPages)
-            {
-                <a href="@Url.Action("Index", "Rehber", new { page = Model.CurrentPage + 1 })">Sonraki &raquo;</a>
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <a href="@Url.Action("Index", "Rehber", new { page = Model.CurrentPage + 1 })">Sonraki &raquo;</a>
+                    }
+                </div>
             }
         </div>
-    }
+
+        <!-- form paneli -->
+        <aside class="form-pane">
+            <div class="form-card">
+                <div class="form-header">
+                    <h3 id="formTitle">Yeni Kayıt Ekle</h3>
+                </div>
+
+                <form id="personForm" onsubmit="return submitForm(event)">
+                    <input type="hidden" id="Id" name="Id" value="0" />
+
+                    <div class="form-row">
+                        <label>Ad</label>
+                        <input type="text" id="Ad" name="Ad" autocomplete="off" />
+                    </div>
+
+                    <div class="form-row">
+                        <label>Soyad</label>
+                        <input type="text" id="Soyad" name="Soyad" autocomplete="off" />
+                    </div>
+
+                    <div class="form-row">
+                        <label>Telefon No</label>
+                        <input type="text"
+                               id="Telefon"
+                               name="Telefon"
+                               autocomplete="off"
+                               inputmode="numeric"
+                               placeholder="05xx xxx xx xx"
+                               maxlength="17" />
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-save">Kaydet</button>
+                        <button type="button" class="btn-cancel" onclick="resetForm()">Vazgeç</button>
+                    </div>
+
+                    <div class="form-hint" id="formHint">Bir kayıt seçip “Düzenle”ye basarak güncelleyebilirsin.</div>
+                </form>
+            </div>
+        </aside>
+    </div>
 
 </section>
 
-@Html.Partial("_AddEditModal")
-@Html.Partial("_DeleteModal")
+<style>
+    .rehber-page {
+        padding: 16px;
+    }
 
-<!-- Arama scripti -->
-<script>
-    const tbody = document.getElementById("kisilerBody");
-    const searchBox = document.getElementById("searchBox");
+    .rehber-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
 
-    searchBox.addEventListener("keyup", function () {
-        let keyword = this.value.toLowerCase();
-        let rows = tbody.getElementsByTagName("tr");
+    .toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
 
-        for (let i = 0; i < rows.length; i++) {
-            let text = rows[i].innerText.toLowerCase();
-            rows[i].style.display = text.includes(keyword) ? "" : "none";
+    .search-inline input {
+        width: 320px;
+        max-width: 42vw;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid #d0d0d0;
+        border-radius: 6px;
+        background: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+        .icon-btn:hover {
+            background: #f6f6f6;
         }
-    });
+
+        .icon-btn.danger {
+            color: #b00020;
+        }
+
+    .rehber-grid {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 16px;
+        align-items: start;
+    }
+
+    .table-wrapper {
+        background: #fff;
+        border: 1px solid #e6e6e6;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .rehber-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .rehber-table th, .rehber-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .rehber-table thead th {
+            background: #fafafa;
+            font-weight: 600;
+        }
+
+    .person-row {
+        cursor: pointer;
+    }
+
+        .person-row:hover {
+            background: #f8fbff;
+        }
+
+        .person-row.selected {
+            background: #eaf3ff;
+        }
+
+    .form-card {
+        border: 1px solid #e6e6e6;
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .form-header {
+        padding: 10px 12px;
+        background: #7a7a7a;
+        color: #fff;
+    }
+
+        .form-header h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+    .form-pane form {
+        padding: 14px;
+    }
+
+    .form-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+        .form-row label {
+            width: 70px;
+            color: #555;
+            font-size: 13px;
+        }
+
+        .form-row input {
+            flex: 1;
+            padding: 8px 10px;
+            border: 1px solid #d6d6d6;
+            border-radius: 6px;
+        }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 8px;
+    }
+
+    .btn-save {
+        background: #1f7a3a;
+        color: #fff;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .btn-cancel {
+        background: #b00020;
+        color: #fff;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .form-hint {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #777;
+        text-align: center;
+    }
+</style>
+
+<script>
+        
+        let tbody = document.getElementById("kisilerBody");
+        const searchBox = document.getElementById("searchBox");
+        const phoneInput = document.getElementById("Telefon");
+
+        let selectedId = null;
+        let mode = "add"; 
+
+        
+        // Telefon: mask + normalize + validate 
+        
+        function onlyDigits(s) { return (s || "").replace(/\D/g, ""); }
+
+        function normalizeTrGsm(input) {
+            let d = onlyDigits(input);
+            if (d.startsWith("90") && d.length >= 12) d = d.substring(2);
+            if (d.startsWith("0") && d.length >= 11) d = d.substring(1);
+            return d; 
+        }
+
+        function isValidTrGsmNormalized(d) { return d.length === 10 && d.startsWith("5"); }
+
+        function maskAsTr(input) {
+            let d = onlyDigits(input);
+            if (d.startsWith("90") && d.length >= 12) d = d.substring(2);
+            if (d.startsWith("0")) d = d.substring(1);
+
+            d = d.substring(0, 10);
+            let s = "0" + d;
+
+            let out = s.substring(0, 4);
+            if (s.length > 4) out += " " + s.substring(4, 7);
+            if (s.length > 7) out += " " + s.substring(7, 9);
+            if (s.length > 9) out += " " + s.substring(9, 11);
+
+            return out.trim();
+        }
+
+        phoneInput.addEventListener("input", function () {
+            const el = this;
+
+            const oldValue = el.value;
+            const oldPos = el.selectionStart || 0;
+
+            const leftPart = oldValue.slice(0, oldPos);
+            const digitsLeftCount = onlyDigits(leftPart).length;
+
+            const newValue = maskAsTr(oldValue);
+            el.value = newValue;
+
+            let pos = 0;
+            let seenDigits = 0;
+
+            while (pos < newValue.length) {
+                if (/\d/.test(newValue[pos])) {
+                    seenDigits++;
+                    if (seenDigits >= digitsLeftCount) { pos++; break; }
+                }
+                pos++;
+            }
+
+            if (digitsLeftCount === 0) pos = 0;
+            el.setSelectionRange(pos, pos);
+        });
+
+        phoneInput.addEventListener("paste", function () {
+            setTimeout(() => { this.value = maskAsTr(this.value); }, 0);
+        });
+
+        
+        //Arama
+      
+        searchBox.addEventListener("keyup", function () {
+            let keyword = this.value.toLowerCase();
+            let rows = tbody.getElementsByTagName("tr");
+            for (let i = 0; i < rows.length; i++) {
+                let text = rows[i].innerText.toLowerCase();
+                rows[i].style.display = text.includes(keyword) ? "" : "none";
+            }
+        });
+
+     
+        // Satır seçimi
+   
+        function selectRow(tr) {
+            const rows = tbody.querySelectorAll("tr");
+            rows.forEach(r => r.classList.remove("selected"));
+            tr.classList.add("selected");
+
+            selectedId = tr.dataset.id;
+
+            fillFormFromRow(tr);
+            mode = "edit";
+            document.getElementById("formTitle").innerText = "Kayıt Düzenle";
+        }
+
+        function fillFormFromRow(tr) {
+            document.getElementById("Id").value = tr.dataset.id;
+            document.getElementById("Ad").value = tr.dataset.ad || "";
+            document.getElementById("Soyad").value = tr.dataset.soyad || "";
+
+            const raw = (tr.dataset.telefonraw || "").trim(); 
+            const shown = raw ? ("0" + raw) : "";
+            phoneInput.value = maskAsTr(shown);
+        }
+
+        function startAdd() {
+            resetForm();
+            mode = "add";
+            document.getElementById("formTitle").innerText = "Yeni Kayıt Ekle";
+            selectedId = null;
+
+            const rows = tbody.querySelectorAll("tr");
+            rows.forEach(r => r.classList.remove("selected"));
+        }
+
+        function startEdit() {
+            if (!selectedId) { alert("Lütfen düzenlemek için bir kayıt seçin."); return; }
+            const tr = tbody.querySelector(`tr[data-id="${selectedId}"]`);
+            if (tr) fillFormFromRow(tr);
+
+            mode = "edit";
+            document.getElementById("formTitle").innerText = "Kayıt Düzenle";
+        }
+
+        
+        // Tablo güncelleme yrdmc
+        
+        function formatPhoneFromNormalized10(d) {
+            if (!d || d.length !== 10 || !d.startsWith("5")) return d || "";
+            return `+90(${d.substring(0, 3)})${d.substring(3, 6)}-${d.substring(6, 8)}-${d.substring(8, 10)}`;
+        }
+
+        function escapeHtml(str) {
+            return (str ?? "").toString()
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function upsertRow(kisi) {
+            const existing = tbody.querySelector(`tr[data-id="${kisi.id}"]`);
+            const formatted = formatPhoneFromNormalized10(kisi.telefon);
+
+            if (!existing) {
+                const html = `
+    <tr class="person-row"
+        data-id="${kisi.id}"
+        data-ad="${escapeHtml(kisi.ad)}"
+        data-soyad="${escapeHtml(kisi.soyad)}"
+        data-telefon="${escapeHtml(formatted)}"
+        data-telefonraw="${escapeHtml(kisi.telefon)}"
+        onclick="selectRow(this)">
+        <td>${escapeHtml(kisi.ad)} ${escapeHtml(kisi.soyad)}</td>
+        <td>${escapeHtml(formatted)}</td>
+    </tr>`;
+                tbody.insertAdjacentHTML("afterbegin", html);
+
+                const tr = tbody.querySelector(`tr[data-id="${kisi.id}"]`);
+                if (tr) selectRow(tr);
+                return;
+            }
+
+            existing.dataset.ad = kisi.ad;
+            existing.dataset.soyad = kisi.soyad;
+            existing.dataset.telefon = formatted;
+            existing.dataset.telefonraw = kisi.telefon;
+
+            const tds = existing.querySelectorAll("td");
+            if (tds.length >= 2) {
+                tds[0].innerText = `${kisi.ad} ${kisi.soyad}`;
+                tds[1].innerText = formatted;
+            }
+
+            if (selectedId && selectedId.toString() === kisi.id.toString()) {
+                fillFormFromRow(existing);
+            }
+        }
+
+        function removeRow(id) {
+            const tr = tbody.querySelector(`tr[data-id="${id}"]`);
+            if (tr) tr.remove();
+
+            if (selectedId && selectedId.toString() === id.toString()) {
+                startAdd();
+            }
+        }
+
+      
+        // Sil (reload yok)
+        
+        async function deleteSelected() {
+            if (!selectedId) { alert("Lütfen silmek için bir kayıt seçin."); return; }
+            if (!confirm("Seçili kayıt silinsin mi?")) return;
+
+            const res = await fetch("@Url.Action("Delete", "Rehber")", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                body: new URLSearchParams({ id: selectedId })
+            });
+
+            if (!res.ok) { alert("Silme işlemi başarısız."); return; }
+
+            const json = await res.json();
+            if (!json.success) { alert(json.message || "Silme işlemi başarısız."); return; }
+
+            removeRow(json.data?.id ?? selectedId);
+        }
+
+       
+        // Kaydet (add/edit)
+      
+        async function submitForm(e) {
+            e.preventDefault();
+
+            const id = document.getElementById("Id").value;
+            const ad = document.getElementById("Ad").value.trim();
+            const soyad = document.getElementById("Soyad").value.trim();
+            const telefonInputVal = phoneInput.value.trim();
+
+            if (!ad || !soyad || !telefonInputVal) {
+                alert("Ad, Soyad ve Telefon alanları zorunlu.");
+                return false;
+            }
+
+            const normalized = normalizeTrGsm(telefonInputVal);
+            if (!isValidTrGsmNormalized(normalized)) {
+                alert("Telefon formatı geçersiz. Örn: 05xx xxx xx xx");
+                return false;
+            }
+
+            const url = (mode === "edit" && id && id !== "0")
+                ? "@Url.Action("Edit", "Rehber")"
+                : "@Url.Action("Add", "Rehber")";
+
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                body: new URLSearchParams({ Id: id, Ad: ad, Soyad: soyad, Telefon: normalized })
+            });
+
+            if (!res.ok) { alert("Kaydetme işlemi başarısız."); return false; }
+
+            const json = await res.json();
+            if (!json.success) { alert(json.message || "İşlem başarısız."); return false; }
+
+            if (json.data) upsertRow(json.data);
+
+            // kaydettikten sonra form temizliği
+            startAdd();
+            return false;
+        }
+
+        function resetForm() {
+            document.getElementById("personForm").reset();
+            document.getElementById("Id").value = "0";
+            document.getElementById("formHint").innerText = "Bir kayıt seçip “Düzenle”ye basarak güncelleyebilirsin.";
+        }
 </script>
